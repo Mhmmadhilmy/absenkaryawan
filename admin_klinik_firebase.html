@@ -224,11 +224,11 @@ table tr:hover td{background:#f9fafb}
 <div class="pg" id="pg-jadwal">
   <div class="fbar">
     <select id="jkar" onchange="renderJadwal()" style="flex:1"><option value="">-- Pilih Karyawan --</option></select>
-    <input type="month" id="jbulan" onchange="renderJadwal()" style="min-width:140px">
+    <select id="jperiod" onchange="renderJadwal()" style="min-width:160px"></select>
   </div>
   <div class="sec">
-    <div class="info-box">💡 Tap shift untuk aktifkan/nonaktifkan. Centang <b>Jaga Sendiri</b> jika karyawan jaga tanpa rekan.</div>
-    <div id="jadwal-content"><div class="empty"><div class="ei">📅</div><p>Pilih karyawan &amp; bulan</p></div></div>
+    <div class="info-box">💡 Tap shift untuk aktifkan/nonaktifkan. Centang <b>Jaga Sendiri</b> jika karyawan jaga tanpa rekan. Centang <b>🏖 Libur</b> jika karyawan tidak masuk hari itu.</div>
+    <div id="jadwal-content"><div class="empty"><div class="ei">📅</div><p>Pilih karyawan &amp; periode</p></div></div>
     <div id="jsa" style="display:none;margin-top:10px">
       <button class="btn btn-teal btn-lg btn-block" id="btn-save-jadwal">💾 Simpan Jadwal</button>
     </div>
@@ -596,8 +596,10 @@ function renderRekap(){if(window._renderRekap)window._renderRekap();}
         var s=SC[sh],ab=getAbsen(kar.id,tgl,sh),send=isSendiri(kar.id,tgl,sh);
         var rcls='srow',actHtml='',extraHtml='';
         if(!ab){
-          actHtml='<span class="bdg" style="background:#f3f4f6;color:var(--muted)">Belum hadir</span>'+
-                  '<button class="btn btn-gray btn-sm" data-action="ket" data-kid="'+kar.id+'" data-tgl="'+tgl+'" data-sh="'+sh+'">✎ Ket</button>';
+          // Belum ada keterangan — tampilkan tombol Libur langsung + tombol Ket
+          actHtml=
+            '<button class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #f59e0b" data-action="libur" data-kid="'+kar.id+'" data-tgl="'+tgl+'" data-sh="'+sh+'">🏖 Libur</button>'+
+            '<button class="btn btn-gray btn-sm" data-action="ket" data-kid="'+kar.id+'" data-tgl="'+tgl+'" data-sh="'+sh+'">✎ Ket</button>';
         } else if(ab.status==='hadir'){
           rcls+=' done';
           var pi=send&&ab.pasien!=null?' · '+ab.pasien+' px':'';
@@ -611,9 +613,19 @@ function renderRekap(){if(window._renderRekap)window._renderRekap();}
             extraHtml='<div class="send-sum">👤 Jaga sendiri · '+ab.pasien+' pasien · <b>'+sc+' shift</b> '+
               '<button class="btn btn-gray btn-sm" data-action="pasien" data-kid="'+kar.id+'" data-tgl="'+tgl+'" data-sh="'+sh+'">Edit</button></div>';
           }
-        } else if(ab.status==='izin'){rcls+=' izin-bg';actHtml='<span class="bdg bdg-izin">📋 Izin</span><button class="btn btn-gray btn-sm" data-action="edit-ab" data-kid="'+kar.id+'" data-tgl="'+tgl+'" data-sh="'+sh+'">✎</button>';}
-        else if(ab.status==='sakit'){rcls+=' sakit-bg';actHtml='<span class="bdg bdg-sakit">🏥 Sakit</span><button class="btn btn-gray btn-sm" data-action="edit-ab" data-kid="'+kar.id+'" data-tgl="'+tgl+'" data-sh="'+sh+'">✎</button>';}
-        else if(ab.status==='alpha'){rcls+=' alpha-bg';actHtml='<span class="bdg bdg-alpha">⚠ Alpha</span><button class="btn btn-gray btn-sm" data-action="edit-ab" data-kid="'+kar.id+'" data-tgl="'+tgl+'" data-sh="'+sh+'">✎</button>';}
+        } else if(ab.status==='izin'){
+          rcls+=' izin-bg';
+          actHtml='<span class="bdg" style="background:#fef3c7;color:#92400e">🏖 Libur</span>'+
+                  '<button class="btn btn-gray btn-sm" data-action="edit-ab" data-kid="'+kar.id+'" data-tgl="'+tgl+'" data-sh="'+sh+'">✎</button>';
+        } else if(ab.status==='sakit'){
+          rcls+=' sakit-bg';
+          actHtml='<span class="bdg bdg-sakit">🏥 Sakit</span>'+
+                  '<button class="btn btn-gray btn-sm" data-action="edit-ab" data-kid="'+kar.id+'" data-tgl="'+tgl+'" data-sh="'+sh+'">✎</button>';
+        } else if(ab.status==='alpha'){
+          rcls+=' alpha-bg';
+          actHtml='<span class="bdg bdg-alpha">⚠ Alpha</span>'+
+                  '<button class="btn btn-gray btn-sm" data-action="edit-ab" data-kid="'+kar.id+'" data-tgl="'+tgl+'" data-sh="'+sh+'">✎</button>';
+        }
         rows+='<div class="'+rcls+'"><div class="sdot '+s.dot+'"></div><div class="sinfo"><div class="snm">'+s.label+'</div><div class="stm">'+s.time+(send?'<span class="stag">👤 Sendiri</span>':'')+'</div></div><div class="sact">'+actHtml+'</div></div>'+extraHtml;
       });
       html+='<div class="mon-kar"><div class="mon-hd"><div class="av" style="background:'+kar.color+'">'+inisial(kar.nama)+'</div><div><div class="mon-nm">'+esc(kar.nama)+'</div><div class="mon-pos">'+esc(kar.jabatan)+'</div></div></div><div class="mon-shifts">'+rows+'</div></div>';
@@ -621,25 +633,36 @@ function renderRekap(){if(window._renderRekap)window._renderRekap();}
     if(!html)html='<div class="empty"><div class="ei">📋</div><p>Tidak ada karyawan terjadwal hari ini.<br>Atur jadwal di menu Jadwal.</p></div>';
     cont.innerHTML=html;
 
-    // Event delegation
+    // Event delegation — gunakan string ID
     cont.querySelectorAll('[data-action]').forEach(function(btn){
       btn.addEventListener('click',function(e){
         var el=e.currentTarget;
         var action=el.getAttribute('data-action');
-        var kid=parseInt(el.getAttribute('data-kid'),10);
+        var kid=el.getAttribute('data-kid'); // string, bukan parseInt
         var tgl=el.getAttribute('data-tgl');
         var sh=el.getAttribute('data-sh');
-        if(action==='ket')openKetModal(kid,tgl,sh);
+        if(action==='libur')setLiburLangsung(kid,tgl,sh);
+        else if(action==='ket')openKetModal(kid,tgl,sh);
         else if(action==='edit-ab')openEditAbsen(kid,tgl,sh);
         else if(action==='pasien')openPasModal(kid,tgl,sh);
       });
     });
   }
 
+  // Set libur langsung tanpa buka modal
+  function setLiburLangsung(karId,tgl,sh){
+    var k=_karyawan.find(function(x){return String(x.id)===String(karId);});
+    var nama=k?k.nama:'karyawan';
+    if(!confirm('Set '+nama+' — '+SC[sh].label+' sebagai Libur?'))return;
+    db.ref('absensi/'+tgl+'/'+karId+'_'+sh).set({status:'izin',jam:'-',pasien:null})
+      .then(function(){toast('🏖 '+nama+' — '+SC[sh].label+' ditandai Libur ✓');})
+      .catch(function(e){toast('Error: '+e.message);});
+  }
+
   // ── Modal Keterangan ──────────────────────────────────────
   var _ketCtx=null;
   function openKetModal(karId,tgl,sh){
-    var k=_karyawan.find(function(x){return x.id===karId;});
+    var k=_karyawan.find(function(x){return String(x.id)===String(karId);});
     _ketCtx={karId:karId,tgl:tgl,sh:sh};
     document.getElementById('m-ket-sub').textContent=(k?k.nama:'?')+' · '+SC[sh].label+' '+fmtShort(tgl);
     document.getElementById('m-ket').classList.add('on');
@@ -660,7 +683,7 @@ function renderRekap(){if(window._renderRekap)window._renderRekap();}
   // ── Modal Edit Absensi ────────────────────────────────────
   var _eaCtx=null;
   function openEditAbsen(karId,tgl,sh){
-    var a=getAbsen(karId,tgl,sh),k=_karyawan.find(function(x){return x.id===karId;});
+    var a=getAbsen(karId,tgl,sh),k=_karyawan.find(function(x){return String(x.id)===String(karId);});
     _eaCtx={karId:karId,tgl:tgl,sh:sh,cur:a||{}};
     document.getElementById('m-ea-sub').textContent=(k?k.nama:'?')+' · '+SC[sh].label+' '+fmtShort(tgl);
     document.getElementById('ea-status').value=a?a.status:'hadir';
@@ -683,7 +706,7 @@ function renderRekap(){if(window._renderRekap)window._renderRekap();}
   // ── Modal Pasien ──────────────────────────────────────────
   var _pasCtx=null;
   function openPasModal(karId,tgl,sh){
-    var a=getAbsen(karId,tgl,sh),k=_karyawan.find(function(x){return x.id===karId;});
+    var a=getAbsen(karId,tgl,sh),k=_karyawan.find(function(x){return String(x.id)===String(karId);});
     _pasCtx={karId:karId,tgl:tgl,sh:sh,cur:a||{status:'hadir',jam:nowTime()}};
     document.getElementById('m-pas-sub').textContent=(k?k.nama:'?')+' · '+SC[sh].label+' '+fmtShort(tgl)+' · Jaga Sendiri';
     document.getElementById('pas-val').value=a&&a.pasien!=null?a.pasien:'';
@@ -714,36 +737,106 @@ function renderRekap(){if(window._renderRekap)window._renderRekap();}
     var sel=document.getElementById('jkar');
     sel.innerHTML='<option value="">-- Pilih Karyawan --</option>'+
       _karyawan.map(function(k){return '<option value="'+k.id+'">'+esc(k.nama)+'</option>';}).join('');
-    var now=new Date();
-    document.getElementById('jbulan').value=now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2);
+    // Isi dropdown periode 16-15
+    var pSel=document.getElementById('jperiod');
+    var periods=getPeriods();
+    pSel.innerHTML=periods.map(function(p,i){return '<option value="'+i+'">'+p.label+'</option>';}).join('');
+    var active=getActivePeriod();
+    var idx=periods.findIndex(function(p){return p.start===active.start;});
+    if(idx>=0)pSel.value=idx;
     renderJadwal();
   }
   function renderJadwal(){
-    var karId=document.getElementById('jkar').value,bulan=document.getElementById('jbulan').value;
+    var karId=document.getElementById('jkar').value;
+    var pidx=document.getElementById('jperiod')?document.getElementById('jperiod').value:'';
     var cont=document.getElementById('jadwal-content'),sa=document.getElementById('jsa');
-    if(!karId||!bulan){cont.innerHTML='<div class="empty"><div class="ei">📅</div><p>Pilih karyawan &amp; bulan</p></div>';sa.style.display='none';return;}
-    var yr=parseInt(bulan.split('-')[0]),mn=parseInt(bulan.split('-')[1]),dim=new Date(yr,mn,0).getDate();
+    if(!karId||pidx===''){cont.innerHTML='<div class="empty"><div class="ei">📅</div><p>Pilih karyawan &amp; periode</p></div>';sa.style.display='none';return;}
+    var period=getPeriods()[parseInt(pidx)];
+    var dates=getDates(period);
     _JT={};var html='';
-    for(var d=1;d<=dim;d++){
-      var tgl=yr+'-'+('0'+mn).slice(-2)+'-'+('0'+d).slice(-2);
+    html+='<div style="font-size:12px;font-weight:700;color:var(--teal);margin-bottom:10px;padding:4px 0">📅 '+period.label+'</div>';
+    dates.forEach(function(tgl){
       var dt=new Date(tgl+'T00:00:00'),jd=getJadwal(karId,tgl),isSun=dt.getDay()===0;
-      _JT[tgl]={shifts:jd.shifts.slice(),sendiri:Object.assign({},jd.sendiri||{})};
-      var pills=SHIFTS.map(function(sh){
-        var on=_JT[tgl].shifts.indexOf(sh)!==-1;
-        return '<div class="jpill '+SC[sh].jpill+(on?' on':'')+'" data-tgl="'+tgl+'" data-sh="'+sh+'">'+SC[sh].label+' <span style="font-size:10px;opacity:.7">'+SC[sh].time+'</span></div>';
-      }).join('');
-      var slbls=SHIFTS.map(function(sh){
+      var isLiburHari=!!(jd.libur);
+      _JT[tgl]={shifts:jd.shifts.slice(),sendiri:Object.assign({},jd.sendiri||{}),libur:isLiburHari};
+
+      var dayStyle=isLiburHari?'background:#fffbeb;border-color:#f59e0b':isSun?'opacity:.55':'';
+      var liburBadge=isLiburHari?'<span style="background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">🏖 Libur</span>':'';
+
+      var pills=isLiburHari?'<div style="font-size:12px;color:#92400e;padding:4px 0">Karyawan libur hari ini — shift tidak aktif</div>':
+        SHIFTS.map(function(sh){
+          var on=_JT[tgl].shifts.indexOf(sh)!==-1;
+          return '<div class="jpill '+SC[sh].jpill+(on?' on':'')+'" data-tgl="'+tgl+'" data-sh="'+sh+'">'+SC[sh].label+' <span style="font-size:10px;opacity:.7">'+SC[sh].time+'</span></div>';
+        }).join('');
+
+      var slbls=isLiburHari?'':SHIFTS.map(function(sh){
         var on=_JT[tgl].shifts.indexOf(sh)!==-1,isSend=(_JT[tgl].sendiri||{})[sh];
         return '<label class="send-lbl" id="sl-'+tgl+'-'+sh+'" style="display:'+(on?'flex':'none')+'"><input type="checkbox" data-tgl="'+tgl+'" data-sh="'+sh+'"'+(isSend?' checked':'')+'>&#128100; Sendiri ('+SC[sh].label+')</label>';
       }).join('');
-      html+='<div class="jday" style="'+(isSun?'opacity:.55':'')+'"><div class="jday-hd"><div class="jday-nm" style="'+(isSun?'color:var(--red)':'')+'">'+DAYS[dt.getDay()]+', '+d+' '+MONTHS[mn-1].slice(0,3)+'</div><div style="font-size:10px;color:var(--muted)">'+(isSun?'Libur':'')+'</div></div><div class="jday-pills">'+pills+'</div><div class="jday-sendiri">'+slbls+'</div></div>';
-    }
+
+      var liburBtn='<label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:'+(isLiburHari?'#92400e':'var(--muted)')+';cursor:pointer;padding:0 12px 8px">'+
+        '<input type="checkbox" id="lb-'+tgl+'" data-tgl="'+tgl+'" '+(isLiburHari?'checked':'')+' style="accent-color:#f59e0b;width:14px;height:14px">'+
+        '🏖 Tandai Libur hari ini</label>';
+
+      var tglLbl=DAYS[dt.getDay()]+', '+dt.getDate()+' '+MONTHS[dt.getMonth()].slice(0,3)+' '+dt.getFullYear();
+
+      html+='<div class="jday" style="'+dayStyle+'">'+
+        '<div class="jday-hd">'+
+          '<div class="jday-nm" style="'+(isSun?'color:var(--red)':'')+'">'+tglLbl+'</div>'+
+          '<div style="font-size:10px;color:var(--muted)">'+(isSun?'Minggu ':'')+liburBadge+'</div>'+
+        '</div>'+
+        liburBtn+
+        '<div class="jday-pills" id="pills-'+tgl+'">'+pills+'</div>'+
+        '<div class="jday-sendiri" id="sendiri-'+tgl+'">'+slbls+'</div>'+
+      '</div>';
+    });
     cont.innerHTML=html;sa.style.display='block';
+
+    // Libur checkbox toggles
+    cont.querySelectorAll('input[id^="lb-"]').forEach(function(cb){
+      cb.addEventListener('change',function(){
+        var tgl=cb.getAttribute('data-tgl');
+        var isLibur=cb.checked;
+        _JT[tgl].libur=isLibur;
+        // Update tampilan pills dan sendiri
+        var pillsDiv=document.getElementById('pills-'+tgl);
+        var sendiriDiv=document.getElementById('sendiri-'+tgl);
+        var lbl=cb.parentElement;
+        if(isLibur){
+          pillsDiv.innerHTML='<div style="font-size:12px;color:#92400e;padding:4px 0">Karyawan libur hari ini — shift tidak aktif</div>';
+          if(sendiriDiv)sendiriDiv.innerHTML='';
+          lbl.style.color='#92400e';
+        } else {
+          // Kembalikan pills
+          var pHtml=SHIFTS.map(function(sh){
+            var on=_JT[tgl].shifts.indexOf(sh)!==-1;
+            return '<div class="jpill '+SC[sh].jpill+(on?' on':'')+'" data-tgl="'+tgl+'" data-sh="'+sh+'">'+SC[sh].label+' <span style="font-size:10px;opacity:.7">'+SC[sh].time+'</span></div>';
+          }).join('');
+          pillsDiv.innerHTML=pHtml;
+          // Re-attach pill events
+          pillsDiv.querySelectorAll('.jpill').forEach(function(el){
+            el.addEventListener('click',function(){
+              var t=el.getAttribute('data-tgl'),s=el.getAttribute('data-sh');
+              var idx=_JT[t].shifts.indexOf(s);
+              if(idx>=0){_JT[t].shifts.splice(idx,1);el.classList.remove('on');}
+              else{_JT[t].shifts.push(s);el.classList.add('on');}
+            });
+          });
+          var sHtml=SHIFTS.map(function(sh){
+            var on=_JT[tgl].shifts.indexOf(sh)!==-1,isSend=(_JT[tgl].sendiri||{})[sh];
+            return '<label class="send-lbl" id="sl-'+tgl+'-'+sh+'" style="display:'+(on?'flex':'none')+'"><input type="checkbox" data-tgl="'+tgl+'" data-sh="'+sh+'"'+(isSend?' checked':'')+'>&#128100; Sendiri ('+SC[sh].label+')</label>';
+          }).join('');
+          sendiriDiv.innerHTML=sHtml;
+          lbl.style.color='var(--muted)';
+        }
+      });
+    });
 
     // Pill toggles
     cont.querySelectorAll('.jpill').forEach(function(el){
       el.addEventListener('click',function(){
         var tgl=el.getAttribute('data-tgl'),sh=el.getAttribute('data-sh');
+        if(_JT[tgl].libur)return; // jangan toggle jika libur
         var idx=_JT[tgl].shifts.indexOf(sh);
         if(idx>=0){_JT[tgl].shifts.splice(idx,1);el.classList.remove('on');if(_JT[tgl].sendiri)_JT[tgl].sendiri[sh]=false;var l=document.getElementById('sl-'+tgl+'-'+sh);if(l)l.style.display='none';}
         else{_JT[tgl].shifts.push(sh);el.classList.add('on');var l=document.getElementById('sl-'+tgl+'-'+sh);if(l)l.style.display='flex';}
@@ -764,11 +857,29 @@ function renderRekap(){if(window._renderRekap)window._renderRekap();}
     var updates={};
     Object.keys(_JT).forEach(function(tgl){
       var key='jadwal/'+karId+'_'+tgl;
-      if(_JT[tgl].shifts.length>0) updates[key]=_JT[tgl];
-      else updates[key]=null;
+      if(_JT[tgl].libur){
+        // Simpan jadwal dengan flag libur
+        updates[key]={shifts:_JT[tgl].shifts,sendiri:_JT[tgl].sendiri||{},libur:true};
+        // Otomatis set semua shift jadi libur di absensi
+        var shiftsUntukLibur=_JT[tgl].shifts.length>0?_JT[tgl].shifts:SHIFTS;
+        shiftsUntukLibur.forEach(function(sh){
+          updates['absensi/'+tgl+'/'+karId+'_'+sh]={status:'izin',jam:'-',pasien:null};
+        });
+      } else if(_JT[tgl].shifts.length>0){
+        updates[key]={shifts:_JT[tgl].shifts,sendiri:_JT[tgl].sendiri||{},libur:false};
+        // Hapus flag libur di absensi jika sebelumnya libur
+        SHIFTS.forEach(function(sh){
+          var ab=getAbsen(karId,tgl,sh);
+          if(ab&&ab.status==='izin'&&ab.jam==='-'){
+            updates['absensi/'+tgl+'/'+karId+'_'+sh]=null;
+          }
+        });
+      } else {
+        updates[key]=null;
+      }
     });
     db.ref().update(updates)
-      .then(function(){toast('Jadwal disimpan ✓');})
+      .then(function(){toast('Jadwal & libur disimpan ✓');})
       .catch(function(e){toast('Error: '+e.message);});
   });
 
