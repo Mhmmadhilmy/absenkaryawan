@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Absensi — Klinik Medika Sehat</title>
+<style>
+:root{
+  --teal:#0d7377;--teal-d:#085558;--teal-l:#e6f7f7;
+  --green:#16a34a;--green-l:#dcfce7;
+  --purple-l:#ede9fe;
+  --border:#e5e7eb;--text:#111827;--muted:#6b7280;
+  --bg:#f0f9f9;--card:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* HEADER */
+.hdr{background:linear-gradient(160deg,#053f42 0%,#0d7377 55%,#0fa3a9 100%);padding:18px 20px 22px;position:relative;overflow:hidden}
+.hdr::after{content:'';position:absolute;right:-40px;top:-40px;width:170px;height:170px;background:rgba(255,255,255,.05);border-radius:50%;pointer-events:none}
+.hi{position:relative;z-index:1}
+.hdr-sub{font-size:10px;color:rgba(255,255,255,.65);font-weight:600;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:3px}
+.hdr-title{font-size:20px;font-weight:700;color:#fff;margin-bottom:10px}
+.hdr-row{display:flex;align-items:flex-end;justify-content:space-between}
+.hdr-time{font-size:36px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-1px;line-height:1}
+.hdr-date{font-size:11px;color:rgba(255,255,255,.8);text-align:right;line-height:1.5}
+.shift-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;color:#fff;margin-top:10px}
+.chip-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;flex-shrink:0;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* STATUS BAR */
+.status-bar{padding:8px 16px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px}
+.status-bar.ok{background:#f0fdf4;color:#166534;border-bottom:1px solid #bbf7d0}
+.status-bar.err{background:#fff1f2;color:#991b1b;border-bottom:1px solid #fecdd3}
+.status-bar.loading{background:#f0f9ff;color:#1e40af;border-bottom:1px solid #bfdbfe}
+.status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot-ok{background:#16a34a}.dot-err{background:#dc2626}.dot-loading{background:#2563eb;animation:pulse 1s infinite}
+
+/* CONTENT */
+.content{padding:14px 16px 32px}
+.section-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.9px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.section-lbl::after{content:'';flex:1;height:1px;background:var(--border)}
+.shift-block{margin-bottom:16px}
+.shift-hd{display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:12px 12px 0 0;font-weight:700;font-size:13px;color:#fff}
+.sh-pagi{background:linear-gradient(90deg,#b45309,#d97706)}
+.sh-siang{background:linear-gradient(90deg,#047857,#10b981)}
+.sh-sore{background:linear-gradient(90deg,#5b21b6,#8b5cf6)}
+.sh-time{margin-left:auto;font-size:11px;font-weight:500;opacity:.88}
+.shift-body{background:var(--card);border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.kcard{display:flex;align-items:center;gap:13px;padding:13px 15px;border-bottom:1px solid var(--border)}
+.kcard:last-child{border-bottom:none}
+.kcard.tap{cursor:pointer;transition:background .1s}
+.kcard.tap:active{background:var(--teal-l)}
+.kcard.done{background:#fafffe}
+.av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.kinfo{flex:1;min-width:0}
+.kname{font-size:14px;font-weight:600;line-height:1.3}
+.kpos{font-size:11px;color:var(--muted);margin-top:2px}
+.ktap{font-size:11px;color:var(--teal);font-weight:600;margin-top:4px}
+.stag{font-size:10px;background:var(--purple-l);color:#5b21b6;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px}
+.kstatus{flex-shrink:0}
+.bdg-done{display:inline-flex;align-items:center;gap:3px;background:var(--green-l);color:#166534;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700}
+.bdg-wait{background:#f3f4f6;color:var(--muted);padding:5px 11px;border-radius:20px;font-size:11px;font-weight:600;display:inline-block}
+.empty{text-align:center;padding:44px 24px;color:var(--muted)}
+.empty .ei{font-size:48px;margin-bottom:12px}
+.empty .et{font-size:16px;font-weight:700;color:#374151;margin-bottom:6px}
+.empty .es{font-size:13px;line-height:1.7}
+.footer{text-align:center;padding:14px 20px 24px;font-size:11px;color:var(--muted)}
+
+/* CONFIRM DIALOG */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;align-items:center;justify-content:center;padding:20px}
+.overlay.on{display:flex}
+.cbox{background:#fff;border-radius:22px;padding:26px 22px 22px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:pop .22s ease}
+@keyframes pop{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}
+.cav{width:72px;height:72px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:24px;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.cnama{font-size:18px;font-weight:700;margin-bottom:2px}
+.cshift{font-size:12px;color:var(--muted);margin-bottom:2px}
+.cjam{font-size:32px;font-weight:700;color:var(--teal);font-variant-numeric:tabular-nums;letter-spacing:-1px;margin:8px 0 4px}
+.csub{font-size:12px;color:var(--muted);margin-bottom:18px}
+.cbtns{display:flex;gap:10px}
+.cbtn{flex:1;padding:13px;border-radius:12px;font-size:15px;font-weight:700;border:none;cursor:pointer;transition:all .15s}
+.cbtn-yes{background:var(--teal);color:#fff}.cbtn-yes:hover{background:var(--teal-d)}
+.cbtn-no{background:#f3f4f6;color:var(--muted)}
+
+/* SUCCESS FLASH */
+.sflash{display:none;position:fixed;inset:0;z-index:200;background:var(--green);align-items:center;justify-content:center;flex-direction:column;gap:8px}
+.sflash.on{display:flex;animation:fadein .15s ease}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.sf-check{font-size:80px;animation:bounce .4s ease}
+@keyframes bounce{0%{transform:scale(.4)}65%{transform:scale(1.15)}100%{transform:scale(1)}}
+.sf-nm{font-size:22px;font-weight:700;color:#fff;text-align:center;padding:0 20px}
+.sf-info{font-size:13px;color:rgba(255,255,255,.85)}
+.saving-indicator{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:500;z-index:300}
+.saving-indicator.on{display:block}
+
+/* PIN SCREEN */
+#pin-screen{display:none;position:fixed;inset:0;z-index:150;background:linear-gradient(160deg,#053f42 0%,#0d7377 60%,#0fa3a9 100%);align-items:center;justify-content:center;padding:20px}
+#pin-screen.on{display:flex}
+.pin-box{background:#fff;border-radius:22px;padding:28px 22px 24px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.pin-av{width:64px;height:64px;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.pin-nama{font-size:17px;font-weight:700;margin-bottom:2px}
+.pin-sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+.pin-dots{display:flex;gap:12px;justify-content:center;margin-bottom:20px}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:#e5e7eb;transition:all .15s}
+.pin-dot.on{background:var(--teal)}
+.pin-err{font-size:12px;color:#dc2626;font-weight:600;min-height:18px;margin-bottom:8px}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.kp-btn{padding:16px;border-radius:14px;border:none;background:#f9fafb;font-size:20px;font-weight:700;color:var(--text);cursor:pointer;transition:all .12s;-webkit-tap-highlight-color:transparent}
+.kp-btn:active{background:var(--teal-l);transform:scale(.93)}
+.kp-btn.del{background:#fee2e2;color:#dc2626;font-size:16px}
+.kp-btn.empty{background:transparent;cursor:default}
+.pin-batal{width:100%;padding:11px;border-radius:12px;border:none;background:#f3f4f6;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hi">
+    <div class="hdr-sub">🏥 Klinik Medika Sehat</div>
+    <div class="hdr-title">Absensi Karyawan</div>
+    <div class="hdr-row">
+      <div class="hdr-time" id="clock">00:00</div>
+      <div class="hdr-date" id="hdr-date"></div>
+    </div>
+    <div class="shift-chip">
+      <div class="chip-dot"></div>
+      <span id="shift-now-txt">Memuat...</span>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar loading" id="status-bar">
+  <div class="status-dot dot-loading"></div>
+  <span id="status-txt">Menghubungkan ke server...</span>
+</div>
+
+<div class="content">
+  <div class="section-lbl">Jadwal &amp; Absensi Hari Ini</div>
+  <div id="main-list"><div class="empty"><div class="ei">⏳</div><div class="et">Memuat data...</div></div></div>
+</div>
+<div class="footer">Tap nama Anda untuk melakukan absensi · Tersinkron real-time</div>
+
+<!-- CONFIRM -->
+<div class="overlay" id="ov-confirm">
+  <div class="cbox">
+    <div class="cav" id="c-av"></div>
+    <div class="cnama" id="c-nama"></div>
+    <div class="cshift" id="c-shift"></div>
+    <div class="cjam" id="c-jam">00:00</div>
+    <div class="csub">Konfirmasi kehadiran Anda sekarang?</div>
+    <div class="cbtns">
+      <button class="cbtn cbtn-no" id="btn-batal">Batal</button>
+      <button class="cbtn cbtn-yes" id="btn-konfirm">✓ Ya, Hadir</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div class="sflash" id="sflash">
+  <div class="sf-check">✓</div>
+  <div class="sf-nm" id="sf-nm"></div>
+  <div class="sf-info" id="sf-info"></div>
+</div>
+
+<div class="saving-indicator" id="saving">Menyimpan...</div>
+
+<!-- PIN SCREEN -->
+<div id="pin-screen">
+  <div class="pin-box">
+    <div class="pin-av" id="pin-av"></div>
+    <div class="pin-nama" id="pin-nama"></div>
+    <div class="pin-sub">Masukkan PIN 4 angka Anda</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-err" id="pin-err"></div>
+    <div class="keypad">
+      <button class="kp-btn" data-v="1">1</button>
+      <button class="kp-btn" data-v="2">2</button>
+      <button class="kp-btn" data-v="3">3</button>
+      <button class="kp-btn" data-v="4">4</button>
+      <button class="kp-btn" data-v="5">5</button>
+      <button class="kp-btn" data-v="6">6</button>
+      <button class="kp-btn" data-v="7">7</button>
+      <button class="kp-btn" data-v="8">8</button>
+      <button class="kp-btn" data-v="9">9</button>
+      <div class="kp-btn empty"></div>
+      <button class="kp-btn" data-v="0">0</button>
+      <button class="kp-btn del" id="kp-del">⌫</button>
+    </div>
+    <button class="pin-batal" id="pin-batal">Batal</button>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDpMXYelKgVZ5NAGjaqni095bkSCd9wjpI",
+  authDomain: "absenkaryawan-5b98f.firebaseapp.com",
+  databaseURL: "https://absenkaryawan-5b98f-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "absenkaryawan-5b98f",
+  storageBucket: "absenkaryawan-5b98f.firebasestorage.app",
+  messagingSenderId: "456750661786",
+  appId: "1:456750661786:web:587b4b92c5ae142dd1df23"
+};
+</script>
+
+<script>
+(function(){
+  // ── Config check ──────────────────────────────────────────
+  if (!window.FIREBASE_CONFIG || FIREBASE_CONFIG.apiKey.includes('GANTI')) {
+    setStatus('err', '⚠️ Firebase belum dikonfigurasi — isi firebase-config.js terlebih dahulu');
+    document.getElementById('main-list').innerHTML =
+      '<div class="empty"><div class="ei">⚙️</div><div class="et">Konfigurasi diperlukan</div>' +
+      '<div class="es">Buka file <b>firebase-config.js</b><br>dan isi dengan konfigurasi Firebase Anda.</div></div>';
+    return;
+  }
+
+  // ── Init Firebase ─────────────────────────────────────────
+  var app = firebase.initializeApp(FIREBASE_CONFIG);
+  var db  = firebase.database();
+
+  // ── Konstanta ─────────────────────────────────────────────
+  var SC = {
+    pagi:  { label:'Pagi',  time:'06.30–11.00', hd:'sh-pagi'  },
+    siang: { label:'Siang', time:'11.00–15.30', hd:'sh-siang' },
+    sore:  { label:'Sore',  time:'15.30–20.00', hd:'sh-sore'  }
+  };
+  var SHIFTS = ['pagi','siang','sore'];
+  var DAYS   = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  var MONTHS = ['Januari','Februari','Maret','April','Mei','Juni',
+                'Juli','Agustus','September','Oktober','November','Desember'];
+
+  // Semua shift bisa diabsen mulai jam 06.30 sampai 00.00 (1440 menit)
+  // Expired hanya jika sudah melewati tengah malam (hari sudah berganti)
+  function isShiftBisaAbsen() {
+    var now = new Date();
+    var tot = now.getHours()*60 + now.getMinutes();
+    return tot >= 390; // mulai 06.30
+  }
+  // Belum waktunya (sebelum 06.30)
+  function isShiftBelumMulai() {
+    var now = new Date();
+    var tot = now.getHours()*60 + now.getMinutes();
+    return tot < 390;
+  }
+
+  // ── State lokal (cache dari Firebase) ─────────────────────
+  var _karyawan = [];   // array
+  var _jadwal   = {};   // { "karId_tgl": {shifts,sendiri} }
+  var _absensi  = {};   // { "karId_tgl_sh": {status,jam,pasien} }
+  var _connected = false;
+  var _confirmOpen = false;
+  var _ctx = null;
+
+  // ── Helpers ───────────────────────────────────────────────
+  function today() {
+    var d  = new Date();
+    return d.getFullYear() + '-' +
+           ('0'+(d.getMonth()+1)).slice(-2) + '-' +
+           ('0'+d.getDate()).slice(-2);
+  }
+  function nowTime() {
+    var n = new Date();
+    return ('0'+n.getHours()).slice(-2)+':'+('0'+n.getMinutes()).slice(-2);
+  }
+  function fmtDate(tgl) {
+    var dt = new Date(tgl+'T00:00:00');
+    return DAYS[dt.getDay()]+', '+dt.getDate()+' '+MONTHS[dt.getMonth()]+' '+dt.getFullYear();
+  }
+  function inisial(nama) {
+    return nama.replace(/^(dr\.|drg\.|bidan\s)/i,'').trim()
+      .split(' ').slice(0,2).map(function(w){return w.charAt(0).toUpperCase();}).join('');
+  }
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function setStatus(type, msg) {
+    var bar = document.getElementById('status-bar');
+    var dot = bar.querySelector('.status-dot');
+    bar.className = 'status-bar ' + type;
+    dot.className = 'status-dot dot-' + type;
+    document.getElementById('status-txt').textContent = msg;
+  }
+  function showSaving(on) {
+    document.getElementById('saving').className = 'saving-indicator' + (on ? ' on' : '');
+  }
+
+  // ── Firebase listeners ─────────────────────────────────────
+  // Koneksi status
+  db.ref('.info/connected').on('value', function(snap) {
+    _connected = !!snap.val();
+    if (_connected) setStatus('ok', '🟢 Terhubung ke server · Data real-time');
+    else            setStatus('err', '🔴 Tidak ada koneksi — periksa internet');
+  });
+
+  var tgl = today();
+
+  // Karyawan — load sekali, dengarkan perubahan
+  db.ref('karyawan').on('value', function(snap) {
+    _karyawan = [];
+    snap.forEach(function(child) { _karyawan.push(child.val()); });
+    render();
+  }, function(err) {
+    setStatus('err', '⚠️ Gagal memuat data: ' + err.message);
+  });
+
+  // Jadwal hari ini
+  db.ref('jadwal').orderByKey().on('value', function(snap) {
+    _jadwal = snap.val() || {};
+    render();
+  });
+
+  // Absensi hari ini — real-time (kalau karyawan lain absen, langsung update)
+  db.ref('absensi/'+tgl).on('value', function(snap) {
+    _absensi = snap.val() || {};
+    render();
+  });
+
+  // ── RENDER ────────────────────────────────────────────────
+  function render() {
+    // Jangan re-render jika confirm atau PIN sedang terbuka
+    if (_confirmOpen || _pinCtx) return;
+    var cont = document.getElementById('main-list');
+    if (!cont) return;
+
+    var perShift = { pagi:[], siang:[], sore:[] };
+    for (var i = 0; i < _karyawan.length; i++) {
+      var k  = _karyawan[i];
+      var jd = _jadwal[k.id+'_'+tgl] || { shifts:[], sendiri:{} };
+      if (!jd.shifts || jd.shifts.length === 0) continue;
+      for (var s = 0; s < SHIFTS.length; s++) {
+        if (jd.shifts.indexOf(SHIFTS[s]) !== -1) perShift[SHIFTS[s]].push(k);
+      }
+    }
+
+    var ada = SHIFTS.some(function(sh){ return perShift[sh].length > 0; });
+    if (!ada) {
+      cont.innerHTML =
+        '<div class="empty"><div class="ei">📋</div>' +
+        '<div class="et">Tidak ada jadwal hari ini</div>' +
+        '<div class="es">Anda tidak memiliki jadwal untuk hari ini.<br>Hubungi admin jika ada kesalahan.</div></div>';
+      return;
+    }
+
+    var html = '';
+    for (var si = 0; si < SHIFTS.length; si++) {
+      var sh    = SHIFTS[si];
+      var kList = perShift[sh];
+      if (!kList.length) continue;
+
+      var rows = '';
+      for (var ki = 0; ki < kList.length; ki++) {
+        var kar  = kList[ki];
+        var abKey = kar.id + '_' + sh;
+        var ab    = _absensi[abKey] || null;
+        var done  = !!(ab && ab.status === 'hadir');
+        var isLibur = !!(ab && ab.status === 'izin');
+        var isSakit = !!(ab && ab.status === 'sakit');
+        var send  = !!((_jadwal[kar.id+'_'+tgl]||{}).sendiri||{})[sh];
+
+        // Waktu: bisa absen 06.30–00.00, belum mulai sebelum 06.30
+        var bisaAbsen = isShiftBisaAbsen();
+        var belumMulai = isShiftBelumMulai();
+
+        var statusHtml = '';
+        var cardClass  = '';
+        var tapHint    = '';
+        var clickable  = false;
+
+        if (done) {
+          cardClass  = 'done';
+          statusHtml = '<div class="bdg-done">✓ '+ab.jam+'</div>';
+        } else if (isLibur) {
+          cardClass  = 'done';
+          statusHtml = '<div style="background:#fef3c7;color:#92400e;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;">🏖 Libur</div>';
+        } else if (isSakit) {
+          cardClass  = 'done';
+          statusHtml = '<div style="background:#dbeafe;color:#1e40af;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;">🏥 Sakit</div>';
+        } else if (belumMulai) {
+          // Sebelum 06.30 — belum bisa absen
+          cardClass  = '';
+          statusHtml = '<div class="bdg-wait">⏳ Belum mulai</div>';
+          tapHint    = '<div style="font-size:10px;color:var(--muted);margin-top:3px">Absen mulai 06.30</div>';
+        } else if (bisaAbsen) {
+          // 06.30–00.00 — bisa absen kapan saja
+          cardClass  = 'tap';
+          clickable  = true;
+          statusHtml = '<div class="bdg-wait">Belum</div>';
+          tapHint    = '<div class="ktap">👆 Tap untuk absen</div>';
+        }
+
+        rows +=
+          '<div class="kcard '+cardClass+'"'+
+               (clickable?' data-kid="'+kar.id+'" data-sh="'+sh+'"':'')+'>'+
+            '<div class="av" style="background:'+kar.color+'">'+inisial(kar.nama)+'</div>'+
+            '<div class="kinfo">'+
+              '<div class="kname">'+esc(kar.nama)+(send?'<span class="stag">👤 Sendiri</span>':'')+'</div>'+
+              '<div class="kpos">'+esc(kar.jabatan)+'</div>'+
+              tapHint+
+            '</div>'+
+            '<div class="kstatus">'+statusHtml+'</div>'+
+          '</div>';
+      }
+
+      html +=
+        '<div class="shift-block">'+
+          '<div class="shift-hd '+SC[sh].hd+'">'+
+            '<span>⏰</span><span>Shift '+SC[sh].label+'</span>'+
+            '<span class="sh-time">'+SC[sh].time+'</span>'+
+          '</div>'+
+          '<div class="shift-body">'+rows+'</div>'+
+        '</div>';
+    }
+
+    cont.innerHTML = html;
+
+    // Event listeners — gunakan string ID, bukan parseInt
+    var cards = cont.querySelectorAll('.kcard.tap');
+    for (var ci = 0; ci < cards.length; ci++) {
+      cards[ci].addEventListener('click', onCardClick);
+    }
+  }
+
+  // ── PIN SYSTEM ────────────────────────────────────────────
+  var _pinCtx = null; // {karId, sh, kar}
+  var _pinVal  = '';
+
+  function bukaPinScreen(karId, sh) {
+    var k = null;
+    for (var i = 0; i < _karyawan.length; i++) {
+      if (String(_karyawan[i].id) === String(karId)) { k = _karyawan[i]; break; }
+    }
+    if (!k) return;
+    // Cek apakah karyawan sudah punya PIN
+    if (!k.pin) {
+      alert('PIN belum diatur untuk '+k.nama+'.\nHubungi admin untuk mengatur PIN.');
+      return;
+    }
+    _pinCtx = { karId: karId, sh: sh, kar: k };
+    _pinVal  = '';
+    document.getElementById('pin-av').style.background = k.color;
+    document.getElementById('pin-av').textContent      = inisial(k.nama);
+    document.getElementById('pin-nama').textContent    = k.nama;
+    document.getElementById('pin-err').textContent     = '';
+    updatePinDots();
+    document.getElementById('pin-screen').classList.add('on');
+  }
+
+  function updatePinDots() {
+    for (var i = 0; i < 4; i++) {
+      document.getElementById('pd'+i).classList.toggle('on', i < _pinVal.length);
+    }
+  }
+
+  function closePinScreen() {
+    _pinCtx = null; _pinVal = '';
+    document.getElementById('pin-screen').classList.remove('on');
+    updatePinDots();
+  }
+
+  function checkPin() {
+    if (!_pinCtx) return;
+    if (_pinVal === String(_pinCtx.kar.pin)) {
+      // PIN benar — simpan ctx dulu sebelum close
+      var karId = _pinCtx.karId;
+      var sh    = _pinCtx.sh;
+      closePinScreen();
+      bukaConfirm(karId, sh); // pakai variabel lokal, bukan _pinCtx
+    } else {
+      document.getElementById('pin-err').textContent = '❌ PIN salah, coba lagi';
+      _pinVal = '';
+      updatePinDots();
+    }
+  }
+
+  // Keypad events
+  document.querySelectorAll('.kp-btn[data-v]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if (_pinVal.length >= 4) return;
+      _pinVal += btn.getAttribute('data-v');
+      document.getElementById('pin-err').textContent = '';
+      updatePinDots();
+      if (_pinVal.length === 4) {
+        setTimeout(checkPin, 200); // delay kecil agar dot ke-4 terlihat dulu
+      }
+    });
+  });
+  document.getElementById('kp-del').addEventListener('click', function(){
+    _pinVal = _pinVal.slice(0, -1);
+    document.getElementById('pin-err').textContent = '';
+    updatePinDots();
+  });
+  document.getElementById('pin-batal').addEventListener('click', closePinScreen);
+
+  // ── Konfirmasi ────────────────────────────────────────────
+  function bukaConfirm(karId, sh) {
+    var k = null;
+    for (var i = 0; i < _karyawan.length; i++) {
+      if (String(_karyawan[i].id) === String(karId)) { k = _karyawan[i]; break; }
+    }
+    if (!k) return;
+    _ctx         = { karId: karId, sh: sh };
+    _confirmOpen = true;
+    document.getElementById('c-av').style.background = k.color;
+    document.getElementById('c-av').textContent      = inisial(k.nama);
+    document.getElementById('c-nama').textContent    = k.nama;
+    document.getElementById('c-shift').textContent   = 'Shift '+SC[sh].label+'  ·  '+SC[sh].time;
+    document.getElementById('c-jam').textContent     = nowTime();
+    document.getElementById('ov-confirm').classList.add('on');
+  }
+
+  function closeConfirm() {
+    _confirmOpen = false; _ctx = null;
+    document.getElementById('ov-confirm').classList.remove('on');
+  }
+
+  function konfirmasi() {
+    if (!_ctx) return;
+    if (!_connected) {
+      alert('Tidak ada koneksi internet. Coba lagi setelah terhubung.');
+      return;
+    }
+    var karId = _ctx.karId, sh = _ctx.sh;
+    var jam   = nowTime(), tglNow = today();
+
+    var nama = '';
+    for (var i = 0; i < _karyawan.length; i++) {
+      if (String(_karyawan[i].id) === String(karId)) { nama = _karyawan[i].nama; break; }
+    }
+
+    closeConfirm(); // tutup confirm dulu
+    showSaving(true);
+
+    db.ref('absensi/'+tglNow+'/'+karId+'_'+sh)
+      .set({ status:'hadir', jam:jam, pasien:null })
+      .then(function() {
+        showSaving(false);
+        // Tampilkan flash sukses
+        document.getElementById('sf-nm').textContent   = nama;
+        document.getElementById('sf-info').textContent = 'Shift '+SC[sh].label+' · '+jam;
+        var fl = document.getElementById('sflash');
+        fl.classList.add('on');
+        setTimeout(function(){
+          fl.classList.remove('on');
+          render(); // render ulang setelah flash selesai
+        }, 2000);
+      })
+      .catch(function(err) {
+        showSaving(false);
+        alert('Gagal menyimpan: '+err.message+'\nCoba lagi.');
+      });
+  }
+
+  function onCardClick(e) {
+    var card = e.currentTarget;
+    var kid  = card.getAttribute('data-kid');
+    var sh   = card.getAttribute('data-sh');
+    if (!kid || !sh) return;
+    bukaPinScreen(kid, sh); // PIN dulu sebelum absen
+  }
+
+  document.getElementById('btn-batal').addEventListener('click', closeConfirm);
+  document.getElementById('btn-konfirm').addEventListener('click', konfirmasi);
+
+  // ── Clock ─────────────────────────────────────────────────
+  function updateClock() {
+    var now = new Date();
+    var h = now.getHours(), m = now.getMinutes(), tot = h*60+m;
+    document.getElementById('clock').textContent = ('0'+h).slice(-2)+':'+('0'+m).slice(-2);
+    document.getElementById('hdr-date').textContent = fmtDate(today());
+    var txt = 'Di luar jam shift';
+    if      (tot>=390&&tot<660)  txt='Shift Pagi sedang berlangsung';
+    else if (tot>=660&&tot<930)  txt='Shift Siang sedang berlangsung';
+    else if (tot>=930&&tot<1200) txt='Shift Sore sedang berlangsung';
+    document.getElementById('shift-now-txt').textContent = txt;
+    if (_confirmOpen) {
+      var el = document.getElementById('c-jam');
+      if (el) el.textContent = nowTime();
+    }
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // Auto-refresh setiap menit untuk update status waktu
+  setInterval(function(){
+    if(!_confirmOpen && !_pinCtx) render();
+  }, 60000);
+
+  // Cek tengah malam — reset listener ke tanggal baru
+  setInterval(function(){
+    var nowTgl = today();
+    if(nowTgl !== tgl){
+      tgl = nowTgl;
+      // Re-listen ke absensi hari baru
+      db.ref('absensi/'+tgl).on('value', function(snap){
+        _absensi = snap.val() || {};
+        if(!_confirmOpen && !_pinCtx) render();
+      });
+    }
+  }, 60000);
+
+})();
+</script>
+</body>
+</html>
